@@ -20,6 +20,8 @@ Replace the old Jekyll blog (and the abandoned mkdocs migration) with a modern,
 | Generator | **Hugo** with a hand-written minimal theme (templates in `layouts/`, no `themes/` dir, no pre-built theme) |
 | Dark mode | **Dark-only**, pure CSS, zero JS |
 | Old posts | **Start fresh.** Keep `old/` in the repo as an unpublished archive; do not migrate |
+| Homepage | **Centered splash** like the original (image in the middle, name, inline `blog / about / github / contact` links), styled after cca.org's minimalism but dark. Post list lives at `/blog`, not the home page |
+| Splash image | **Single fixed image** (`params.homeImage`), zero JS — no random rotation |
 | Deployment | **Stock `nginx:alpine` Podman Quadlet** that mounts a host directory of built files read-only. **No custom image, no registry.** |
 | Build location | **Host builds from this repo** — `hugo` (or a one-shot podman hugo container) writes `public/` straight into the served directory |
 | Branding | **Minimal** — name "David Igou" + a GitHub link, no tagline |
@@ -39,19 +41,21 @@ no `themes/` directory and no third-party theme.
 
 ```
 hugo.toml                    # site config (baseURL, title, params, markup/highlight)
-archetypes/default.md        # template used by `hugo new posts/<name>.md`
+archetypes/default.md        # template used by `hugo new blog/<name>.md`
 content/
-  _index.md                  # homepage intro copy
-  about.md                   # short about / contact page
-  posts/
+  about.md                   # short about / self page
+  contact.md                 # contact page (email + links)
+  blog/
+    _index.md                # optional intro copy at top of the /blog list
     hello-world.md           # one starter post (demonstrates code block + frontmatter)
 layouts/
-  _default/baseof.html       # HTML shell: <head>, header (name + GitHub link), footer
-  _default/single.html       # a single post
-  _default/list.html         # generic section listing (e.g. /posts/)
-  index.html                 # homepage: intro + reverse-chron post list
+  index.html                 # homepage: centered splash (image, name, inline links) — standalone, no site chrome
+  _default/baseof.html       # HTML shell for content pages: small header (name → home), content, footer
+  _default/single.html       # a single blog post
+  _default/list.html         # the /blog listing (reverse-chron posts)
 static/
   css/style.css              # the one stylesheet (dark-only)
+  img/home.jpg               # the single centered splash image (swappable; see params.homeImage)
 deploy/
   igou-io.container          # Podman Quadlet unit (stock nginx:alpine + volume mount)
   build.sh                   # build the site into the served dir (host hugo or podman one-shot)
@@ -61,19 +65,38 @@ deploy/
 
 ## Authoring flow
 
-- `hugo new posts/my-title.md` scaffolds frontmatter from `archetypes/default.md`,
-  or simply create the markdown file by hand.
+- `hugo new blog/my-title.md` scaffolds frontmatter from `archetypes/default.md`,
+  or simply create the markdown file by hand under `content/blog/`.
 - Frontmatter: `title` (string), `date` (ISO date), optional `tags` (list).
 - `draft: true` keeps a post out of the build until ready.
-- Write markdown, commit, push to `master` → CI builds and publishes.
+- Write markdown, commit → next host build publishes it.
+
+## Homepage (the splash)
+
+Faithful to the original igou.io home and inspired by the ultra-minimal, whitespace-
+driven, content-first feel of cca.org — rendered dark:
+
+- A single centered column, vertically and horizontally centered in the viewport.
+- One fixed image in the middle (`static/img/home.jpg`, path set by `params.homeImage`
+  in `hugo.toml` so it's a one-line swap). Zero JavaScript — no random rotation.
+- The name **"David M Igou"** beneath the image.
+- A single row of inline text links, cca-style separated by ` / `:
+  **blog / about / github / contact**. `blog`, `about`, `contact` are internal pages;
+  `github` is an external link to github.com/david-igou.
+- No site header/footer chrome on the splash itself — it stands alone.
 
 ## Pages & URLs
 
-- `/` — homepage: brief intro + reverse-chronological list of posts (title + date).
-- `/posts/<slug>/` — individual posts.
-- `/about/` — short about/contact page.
+- `/` — the splash (above). No post list here.
+- `/blog/` — reverse-chronological list of posts (title + date).
+- `/blog/<slug>/` — individual posts.
+- `/about/` — short about / self page.
+- `/contact/` — contact page (email + links).
 - `/index.xml` — RSS feed (Hugo built-in, generated at build, zero JS).
 - `/sitemap.xml` — sitemap (Hugo built-in).
+
+Content pages (`/blog`, posts, `/about`, `/contact`) carry a small header — the name
+linking back to `/` — and a minimal footer. The splash is the only chrome-less page.
 
 Out of scope for v1 (YAGNI; trivial to add later): tag/category pages, pagination,
 client-side search, comments, analytics.
@@ -82,9 +105,21 @@ client-side search, comments, analytics.
 
 - A single dark palette defined with CSS custom properties at the top of `style.css`.
 - System font stacks; readable measure (max content width ~ 40–46rem, centered).
+- cca.org-inspired minimalism: inline ` / `-separated links, whitespace for hierarchy,
+  no boxes/borders/decoration beyond what's needed.
+- The splash uses fl/centering CSS (e.g. a flex column) to sit mid-viewport; the image
+  has a sensible max-width so it never dominates on large screens.
 - Minimal, semantic HTML. Visible focus styles and adequate contrast for accessibility.
 - Chroma dark highlight style configured in `hugo.toml` (`markup.highlight`), emitted
   as inline classes/styles at build time.
+
+## Images
+
+- The splash image is a single optimized file in `static/img/`. The old rotation set
+  (`old/images/0–13.jpg`, ~2.8 MB total, some 500 KB+) is NOT shipped wholesale; we
+  pick one, and resize/recompress it so the homepage stays lightweight (target the
+  chosen image well under ~150 KB). User chooses which image; default is a placeholder
+  until they pick.
 
 ## Build & deploy
 
@@ -160,9 +195,10 @@ can be dropped if the user prefers zero CI.
 ## Testing / verification
 
 - `hugo --minify` builds with no errors/warnings; `public/` is produced.
-- Manual: `hugo server` (or open built `public/index.html`) renders homepage, the
-  starter post (with highlighted code), and `/about/` in a dark theme.
-- Confirm **no `<script>` tags** in any built HTML.
+- Manual: `hugo server` renders the centered splash (image + name + `blog / about /
+  github / contact` links), the `/blog/` list, the starter post (with highlighted
+  code), `/about/`, and `/contact/` — all dark.
+- Confirm **no `<script>` tags** in any built HTML (splash image is static, not JS).
 - Confirm RSS (`/index.xml`) and `/sitemap.xml` exist.
 - `deploy/build.sh` writes the built site into a target dir; pointing a stock
   `nginx:alpine` container at that dir and `curl`-ing it returns the homepage.
