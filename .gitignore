@@ -1,8 +1,11 @@
-config.*
-Rakefile
-_site/
-public/
-.sass-cache
-.jekyll-metadata
-do_it_live.sh
+# Hugo build output / cache
+/public/
+/resources/_gen/
+.hugo_build.lock
+
+# locally-downloaded hugo binary (preview/build convenience)
+/.tooling/
+
+# local
 .DS_Store
+do_it_live.sh

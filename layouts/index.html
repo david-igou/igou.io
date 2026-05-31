@@ -1,0 +1,17 @@
+{{ define "main" }}
+{{/* Build-time random splash image (zero JS). Seeded by build time so each
+     rebuild rotates the picture; only the chosen image is processed + served. */}}
+{{ $pool := resources.Match "home/*.jpg" }}
+{{ $pick := index $pool (mod now.UnixNano (len $pool)) }}
+{{ $img := $pick.Resize "600x q80" }}
+<section class="splash">
+  <img class="splash-img" src="{{ $img.RelPermalink }}" alt="{{ .Site.Params.author }}" width="{{ $img.Width }}" height="{{ $img.Height }}">
+  <h1 class="splash-name">{{ .Site.Params.author }}</h1>
+  <nav class="splash-nav">
+    <a href="{{ "/blog/" | relURL }}">blog</a> /
+    <a href="{{ "/about/" | relURL }}">about</a> /
+    <a href="{{ .Site.Params.github }}" rel="me">github</a> /
+    <a href="{{ "/contact/" | relURL }}">contact</a>
+  </nav>
+</section>
+{{ end }}

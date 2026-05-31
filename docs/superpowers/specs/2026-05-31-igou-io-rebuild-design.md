@@ -21,7 +21,7 @@ Replace the old Jekyll blog (and the abandoned mkdocs migration) with a modern,
 | Dark mode | **Dark-only**, pure CSS, zero JS |
 | Old posts | **Start fresh.** Keep `old/` in the repo as an unpublished archive; do not migrate |
 | Homepage | **Centered splash** like the original (image in the middle, name, inline `blog / about / github / contact` links), styled after cca.org's minimalism but dark. Post list lives at `/blog`, not the home page |
-| Splash image | **Single fixed image** (`params.homeImage`), zero JS — no random rotation |
+| Splash image | **Build-time random** — Hugo picks one of `assets/home/*.jpg` per build and resizes/optimizes only that one. Zero JS; recreates the original's rotating image without client-side `Math.random` |
 | Deployment | **Stock `nginx:alpine` Podman Quadlet** that mounts a host directory of built files read-only. **No custom image, no registry.** |
 | Build location | **Host builds from this repo** — `hugo` (or a one-shot podman hugo container) writes `public/` straight into the served directory |
 | Branding | **Minimal** — name "David Igou" + a GitHub link, no tagline |
@@ -53,9 +53,10 @@ layouts/
   _default/baseof.html       # HTML shell for content pages: small header (name → home), content, footer
   _default/single.html       # a single blog post
   _default/list.html         # the /blog listing (reverse-chron posts)
+assets/
+  home/                      # pool of splash images; Hugo random-picks + resizes one per build
 static/
   css/style.css              # the one stylesheet (dark-only)
-  img/home.jpg               # the single centered splash image (swappable; see params.homeImage)
 deploy/
   igou-io.container          # Podman Quadlet unit (stock nginx:alpine + volume mount)
   build.sh                   # build the site into the served dir (host hugo or podman one-shot)
@@ -77,8 +78,9 @@ Faithful to the original igou.io home and inspired by the ultra-minimal, whitesp
 driven, content-first feel of cca.org — rendered dark:
 
 - A single centered column, vertically and horizontally centered in the viewport.
-- One fixed image in the middle (`static/img/home.jpg`, path set by `params.homeImage`
-  in `hugo.toml` so it's a one-line swap). Zero JavaScript — no random rotation.
+- One image in the middle, **picked at random at build time** from `assets/home/*.jpg`
+  (seeded by build time). Hugo resizes/optimizes only the chosen image. Zero JavaScript
+  — recreates the original site's rotating image without a client-side script.
 - The name **"David M Igou"** beneath the image.
 - A single row of inline text links, cca-style separated by ` / `:
   **blog / about / github / contact**. `blog`, `about`, `contact` are internal pages;
@@ -115,11 +117,11 @@ client-side search, comments, analytics.
 
 ## Images
 
-- The splash image is a single optimized file in `static/img/`. The old rotation set
-  (`old/images/0–13.jpg`, ~2.8 MB total, some 500 KB+) is NOT shipped wholesale; we
-  pick one, and resize/recompress it so the homepage stays lightweight (target the
-  chosen image well under ~150 KB). User chooses which image; default is a placeholder
-  until they pick.
+- The splash pool lives in `assets/home/` (the original rotation set `1–13.jpg` plus
+  `des-allant.jpg`; the stray `0.jpg`, actually a GIF, is excluded). At each build Hugo
+  random-picks one and `.Resize "600x q80"` produces an optimized JPEG (~65 KB) — so
+  only the chosen image is published and the homepage stays light (total ~68 KB).
+- Originals are committed to `assets/`; resized derivatives go to `public/` only.
 
 ## Build & deploy
 

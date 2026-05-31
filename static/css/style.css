@@ -1,0 +1,60 @@
+:root {
+  --bg: #0e0e10;
+  --fg: #d6d6d6;
+  --muted: #8a8a8a;
+  --accent: #9ab8ff;
+  --line: #1f1f22;
+  --code-bg: #1c1c1f;
+  --maxw: 42rem;
+  --font: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, "Liberation Mono", monospace;
+}
+
+* { box-sizing: border-box; }
+
+html { font-size: 16px; }
+
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font-family: var(--font);
+  line-height: 1.65;
+  -webkit-font-smoothing: antialiased;
+}
+
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+img { max-width: 100%; height: auto; }
+
+/* ---------- splash (home) ---------- */
+body.home { min-height: 100vh; display: flex; align-items: center; justify-content: center; }
+.splash { text-align: center; padding: 2rem 1rem; }
+.splash-img { width: min(90vw, 480px); height: auto; border-radius: 2px; }
+.splash-name { font-size: 1.25rem; font-weight: 600; letter-spacing: .01em; margin: 1.25rem 0 .4rem; }
+.splash-nav { color: var(--muted); }
+.splash-nav a { margin: 0 .2rem; }
+
+/* ---------- content pages ---------- */
+main { max-width: var(--maxw); margin: 0 auto; padding: 1rem 1.25rem 4rem; }
+.site-header { max-width: var(--maxw); margin: 0 auto; padding: 1.5rem 1.25rem .5rem; }
+.site-header a { color: var(--fg); font-weight: 600; }
+.site-footer { max-width: var(--maxw); margin: 0 auto; padding: 2rem 1.25rem; color: var(--muted); font-size: .9rem; border-top: 1px solid var(--line); }
+
+h1, h2, h3 { line-height: 1.25; }
+.post-meta { color: var(--muted); font-size: .9rem; margin-top: -.4rem; }
+
+.post-list { list-style: none; padding: 0; margin: 1.5rem 0 0; }
+.post-list li { display: flex; justify-content: space-between; align-items: baseline; gap: 1rem; padding: .5rem 0; border-bottom: 1px solid var(--line); }
+.post-list time { color: var(--muted); white-space: nowrap; font-size: .9rem; }
+
+blockquote { border-left: 3px solid #333; margin: 1rem 0; padding: .2rem 1rem; color: var(--muted); }
+hr { border: none; border-top: 1px solid var(--line); margin: 2rem 0; }
+
+/* ---------- code ---------- */
+code, pre { font-family: var(--mono); font-size: .875rem; }
+code { background: var(--code-bg); padding: .1rem .35rem; border-radius: 3px; }
+pre { background: var(--code-bg); padding: 1rem; overflow-x: auto; border-radius: 6px; line-height: 1.45; }
+pre code { background: none; padding: 0; }

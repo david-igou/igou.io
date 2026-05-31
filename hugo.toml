@@ -1,0 +1,23 @@
+baseURL = "https://igou.io/"
+locale = "en-us"
+title = "David M Igou"
+enableRobotsTXT = true
+
+[params]
+  author = "David M Igou"
+  # Splash image is picked at random from assets/home/*.jpg at each build.
+  github = "https://github.com/david-igou"
+  email = "igou.david@gmail.com"
+
+[markup]
+  [markup.highlight]
+    # Build-time syntax highlighting (Chroma). noClasses inlines the colors,
+    # so highlighted code needs no extra CSS file and zero JavaScript.
+    style = "github-dark"
+    noClasses = true
+    tabWidth = 2
+    lineNos = false
+
+# Reverse-chronological is handled in the template; keep config minimal.
+[taxonomies]
+  tag = "tags"

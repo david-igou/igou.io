@@ -1,0 +1,16 @@
+[Unit]
+Description=igou.io static site
+After=network-online.target
+Wants=network-online.target
+
+[Container]
+Image=docker.io/library/nginx:alpine
+PublishPort=8080:80
+# Host directory that `deploy/build.sh` writes the built site into.
+Volume=/srv/www/igou.io:/usr/share/nginx/html:ro,Z
+
+[Service]
+Restart=always
+
+[Install]
+WantedBy=default.target
