@@ -20,9 +20,9 @@ Replace the old Jekyll blog (and the abandoned mkdocs migration) with a modern,
 | Generator | **Hugo** with a hand-written minimal theme (templates in `layouts/`, no `themes/` dir, no pre-built theme) |
 | Dark mode | **Dark-only**, pure CSS, zero JS |
 | Old posts | **Start fresh.** Keep `old/` in the repo as an unpublished archive; do not migrate |
-| Deployment | **Podman Quadlet** (systemd unit) running an `nginx:alpine` image pulled from Quay |
+| Deployment | **Stock `nginx:alpine` Podman Quadlet** that mounts a host directory of built files read-only. **No custom image, no registry.** |
+| Build location | **Host builds from this repo** — `hugo` (or a one-shot podman hugo container) writes `public/` straight into the served directory |
 | Branding | **Minimal** — name "David Igou" + a GitHub link, no tagline |
-| Container build | Single-arch `nginx:alpine` serving static files (drop the old prometheus exporter sidecar and multi-arch matrix) |
 
 ## Philosophy / output budget
 
@@ -52,10 +52,11 @@ layouts/
   index.html                 # homepage: intro + reverse-chron post list
 static/
   css/style.css              # the one stylesheet (dark-only)
-Dockerfile                   # nginx:alpine, COPY public/ -> /usr/share/nginx/html
 deploy/
-  igou-io.container          # Podman Quadlet unit
-.github/workflows/master.yml # build + push pipeline (rewritten)
+  igou-io.container          # Podman Quadlet unit (stock nginx:alpine + volume mount)
+  build.sh                   # build the site into the served dir (host hugo or podman one-shot)
+  README.md                  # one-time setup notes (quadlet install, paths)
+.github/workflows/master.yml # build-verification only (no deploy)
 ```
 
 ## Authoring flow
@@ -87,37 +88,38 @@ client-side search, comments, analytics.
 
 ## Build & deploy
 
-### Container
+**No custom container image and no registry.** A stock `nginx:alpine` serves files
+from a host directory that the host populates by building this repo with Hugo.
 
-`Dockerfile` (single-arch):
+### Host build — `deploy/build.sh`
 
-```dockerfile
-FROM nginx:alpine
-COPY public/ /usr/share/nginx/html/
-```
+Builds the site into the served directory (default `/srv/www/igou.io`, overridable via
+an env var / arg). Two interchangeable mechanisms, both producing the same `public/`:
 
-(Hugo output dir is `public/`. nginx:alpine already serves on port 80 with a sane
-default config; no custom nginx.conf required for v1.)
+- **Host hugo** (if Hugo is installed, e.g. via mise):
+  ```sh
+  hugo --minify --source "$REPO" --destination "$OUT_DIR"
+  ```
+- **Podman one-shot** (no host Hugo dependency):
+  ```sh
+  podman run --rm \
+    -v "$REPO":/src:ro,Z \
+    -v "$OUT_DIR":/out:Z \
+    docker.io/hugomods/hugo:latest \
+    hugo --minify --source /src --destination /out
+  ```
 
-### CI — `.github/workflows/master.yml` (rewritten)
-
-On push to `master` (and `workflow_dispatch`):
-
-1. Checkout.
-2. Install Hugo (pinned version) — e.g. `peaceiris/actions-hugo` or direct download.
-3. `hugo --minify` → produces `public/`.
-4. Build the image from `Dockerfile`.
-5. Log in to Quay (`QUAY_LOGIN` / `QUAY_PASSWORD` secrets, already present) and push
-   `quay.io/igou/igou.io:latest`. Single-arch (`linux/amd64` by default; switch to
-   `arm64` or add a second platform only if the target host needs it).
-
-No prometheus exporter, no multi-arch matrix, no artifact hand-off between jobs.
+`build.sh` defaults to host hugo and falls back to (or can be flagged into) the podman
+one-shot. Deploy = run `build.sh` on the host (manually, or from a git pull + systemd
+timer the user wires up later — out of scope for v1).
 
 ### Runtime — Podman Quadlet
 
 `deploy/igou-io.container` (installed to `/etc/containers/systemd/` for rootful, or
 `~/.config/containers/systemd/` for rootless; `systemctl daemon-reload` generates the
-service):
+service). Mounts the served directory read-only — nginx:alpine already serves
+`/usr/share/nginx/html` on port 80 with a sane default config, so no custom nginx.conf
+is needed for v1:
 
 ```ini
 [Unit]
@@ -126,9 +128,9 @@ After=network-online.target
 Wants=network-online.target
 
 [Container]
-Image=quay.io/igou/igou.io:latest
+Image=docker.io/library/nginx:alpine
 PublishPort=8080:80
-AutoUpdate=registry
+Volume=/srv/www/igou.io:/usr/share/nginx/html:ro,Z
 
 [Service]
 Restart=always
@@ -137,9 +139,15 @@ Restart=always
 WantedBy=default.target
 ```
 
-`AutoUpdate=registry` lets `podman auto-update` (timer) pull a freshly-pushed `:latest`
-and restart the unit. The published host port (`8080`) is a placeholder the user can
-adjust to fit their reverse proxy / ingress.
+The served path (`/srv/www/igou.io`) and host port (`8080`) are placeholders the user
+adjusts to fit their host / reverse proxy.
+
+### CI — `.github/workflows/master.yml` (build-verification only)
+
+On push / PR / `workflow_dispatch`: checkout, install Hugo (pinned version, e.g.
+`peaceiris/actions-hugo`), run `hugo --minify`, fail on errors. This is a sanity check
+that the site builds — it does **not** deploy and needs no secrets. Entirely optional;
+can be dropped if the user prefers zero CI.
 
 ## Cleanup
 
@@ -156,11 +164,12 @@ adjust to fit their reverse proxy / ingress.
   starter post (with highlighted code), and `/about/` in a dark theme.
 - Confirm **no `<script>` tags** in any built HTML.
 - Confirm RSS (`/index.xml`) and `/sitemap.xml` exist.
-- `podman build` of the Dockerfile succeeds and `curl` against the running container
-  returns the homepage.
+- `deploy/build.sh` writes the built site into a target dir; pointing a stock
+  `nginx:alpine` container at that dir and `curl`-ing it returns the homepage.
 
 ## Non-goals
 
 - No client-side JS, no analytics/trackers, no comments, no web fonts.
 - No migration of old posts (archived only).
-- No multi-arch image unless explicitly required by the deploy host.
+- No custom container image and no registry — a stock `nginx:alpine` serves
+  host-built files.
