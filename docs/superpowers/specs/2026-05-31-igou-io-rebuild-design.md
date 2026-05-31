@@ -19,7 +19,7 @@ Replace the old Jekyll blog (and the abandoned mkdocs migration) with a modern,
 | --- | --- |
 | Generator | **Hugo** with a hand-written minimal theme (templates in `layouts/`, no `themes/` dir, no pre-built theme) |
 | Dark mode | **Dark-only**, pure CSS, zero JS |
-| Old posts | **Start fresh.** Keep `old/` in the repo as an unpublished archive; do not migrate |
+| Old posts | **Start fresh.** Old Jekyll content not migrated; `old/` has since been removed entirely (its rotation images were copied into `assets/home/` first) |
 | Homepage | **Centered splash** like the original (image in the middle, name, inline `blog / about / github / contact` links), styled after cca.org's minimalism but dark. Post list lives at `/blog`, not the home page |
 | Splash image | **Build-time random** — Hugo picks one of `assets/home/*.jpg` per build and resizes/optimizes only that one. Zero JS; recreates the original's rotating image without client-side `Math.random` |
 | Deployment | **Stock `nginx:alpine` Podman Quadlet** that mounts a host directory of built files read-only. **No custom image, no registry.** |
@@ -190,7 +190,8 @@ can be dropped if the user prefers zero CI.
 
 - Remove the abandoned mkdocs migration: `mkdocs.yml`, `docs/index.md`, `docs/blog/`.
   (The `docs/superpowers/` specs subtree stays.)
-- Leave `old/` untouched as the historical archive (not built, not published).
+- Remove `old/` entirely (the old Jekyll site + its vulnerable `Gemfile.lock`); the
+  splash image pool was copied into `assets/home/` beforehand so nothing is lost.
 - Update `.gitignore` to ignore Hugo build output (`/public/`, `/resources/`,
   `.hugo_build.lock`).
 
