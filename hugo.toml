@@ -5,6 +5,7 @@ enableRobotsTXT = true
 
 [params]
   author = "David M Igou"
+  description = "David M Igou's personal website and blog. Site reliability engineering, Linux, open source, and projects."
   # Splash image is picked at random from assets/home/*.jpg at each build.
   github = "https://github.com/david-igou"
   email = "igou.david@gmail.com"
