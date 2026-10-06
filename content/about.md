@@ -1,5 +1,6 @@
 ---
 title: "About"
+description: "About David M Igou, a Site Reliability Engineer at Red Hat with over 20 years of Linux and open source experience."
 ---
 
 I am a Site Reliability Engineer by trade that has been at Red Hat for 10 years. I have been working with Linux and OSS for over 20 years. [Reach out to build things.](mailto:igou.david@gmail.com)

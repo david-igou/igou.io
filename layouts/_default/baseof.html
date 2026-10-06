@@ -4,7 +4,10 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{{ if .IsHome }}{{ .Site.Title }}{{ else }}{{ .Title }} · {{ .Site.Title }}{{ end }}</title>
-  {{ with .Description }}<meta name="description" content="{{ . }}">{{ end }}
+  {{ $description := .Description | default (.Summary | plainify) }}
+  {{ if .IsHome }}{{ $description = .Site.Params.description }}{{ end }}
+  {{ with $description }}<meta name="description" content="{{ . }}">{{ end }}
+  <link rel="canonical" href="{{ .Permalink }}">
   <link rel="stylesheet" href="{{ "css/style.css" | relURL }}">
   {{ with .OutputFormats.Get "rss" -}}
   <link rel="alternate" type="application/rss+xml" href="{{ .RelPermalink }}" title="{{ $.Site.Title }}">
