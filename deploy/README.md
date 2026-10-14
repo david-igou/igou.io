@@ -12,33 +12,20 @@ The VPS pulls the image anonymously and does not build Hugo or need a registry
 credential. The `www.igou.io` redirect is a Gateway HTTPRoute in that cluster.
 
 The commands below describe local build/export work only. The former AAP
-publication job, nightly schedule, and production Quadlet are retired by the
-Kubernetes migration.
+publication job and nightly schedule are retirement targets in the Kubernetes
+migration; the production Quadlet has been removed from this repository.
 
 ## Local serving and export
 
-1. Pick a served directory (default `/srv/www/igou.io`) and create it.
-2. Install the Quadlet unit so systemd manages the nginx container:
-   - rootful: copy `igou-io.container` to `/etc/containers/systemd/`
-   - rootless: copy it to `~/.config/containers/systemd/`
-3. Reload + start:
-   ```sh
-   systemctl daemon-reload          # or: systemctl --user daemon-reload
-   systemctl start igou-io          # or: systemctl --user start igou-io
-   ```
-   nginx now serves the directory on host port `8080` (adjust `PublishPort` /
-   `Volume` in the unit to taste).
-
-## Publishing / updating content
-
-Build straight into the served directory:
+For development, run Hugo locally from the repository root:
 
 ```sh
-./deploy/build.sh /srv/www/igou.io
+hugo server --bind 127.0.0.1
 ```
 
-nginx serves files live, so a rebuild is the deploy — no container restart needed.
-Wire `build.sh` to a git pull + systemd timer if you want it automatic.
+Use the Hugo version pinned by CI. To export static files through the existing
+container helper, run `./deploy/build.sh /path/to/output`. Production publication
+uses the CI/image/GitOps flow above.
 
 ## Search indexing
 
