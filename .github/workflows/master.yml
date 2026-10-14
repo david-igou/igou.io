@@ -31,7 +31,7 @@ jobs:
         run: |
           docker run --detach --name igou-io-smoke --read-only --tmpfs /tmp \
             --user 1000:1000 --publish 127.0.0.1:18080:8080 igou-io:test
-          curl --fail --silent --retry 10 --retry-connrefused --retry-delay 1 \
+          curl --fail --silent --show-error --retry 10 --retry-all-errors --retry-delay 1 \
             http://127.0.0.1:18080/ > /dev/null
       - name: Remove the smoke-test container
         if: always()
