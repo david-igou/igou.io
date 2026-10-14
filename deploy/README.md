@@ -1,10 +1,21 @@
 # Deploy
 
-The site is plain static files served by a stock `nginx:alpine` container. There is no
-custom image and no registry — the host builds this repo with Hugo and nginx serves the
-output directory.
+The site is built with the Hugo version pinned in `.github/workflows/master.yml`
+and packaged in an unprivileged nginx image. CI checks pull requests and publishes
+successful merged `master` builds to the existing public repository
+`quay.io/igou/igou.io`, using `vps` and `vps-<commit>` tags.
 
-## One-time setup
+Production deployment is an immutable digest in
+`igou-kubernetes/clusters/vps/applications/igou-io/`. OpenShift Argo CD
+reconciles the VPS deployment, and Renovate updates its pinned `vps` digest.
+The VPS pulls the image anonymously and does not build Hugo or need a registry
+credential. The `www.igou.io` redirect is a Gateway HTTPRoute in that cluster.
+
+The commands below describe local build/export work only. The former AAP
+publication job, nightly schedule, and production Quadlet are retired by the
+Kubernetes migration.
+
+## Local serving and export
 
 1. Pick a served directory (default `/srv/www/igou.io`) and create it.
 2. Install the Quadlet unit so systemd manages the nginx container:
@@ -49,6 +60,6 @@ Submit `https://igou.io/sitemap.xml` in Google Search Console and Bing Webmaster
 Tools after verifying site ownership. Verification and submission are separate
 from deployment; these templates cannot guarantee indexing.
 
-The VPS publishes merged `master` through AAP's `deploy_static_site` job template
-(also scheduled nightly). The `www.igou.io` redirect is managed separately by
-`igou-inventory` and `igou-ansible`, applied through `podman_quadlets`.
+Public TLS and hostname routing are managed by cert-manager and NGINX Gateway
+Fabric through the VPS GitOps manifests. Host lifecycle maintenance remains in
+AAP; site publication uses the CI/image/GitOps path above.

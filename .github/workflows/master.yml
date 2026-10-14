@@ -1,18 +1,57 @@
+---
 name: build-check
 on:
   push:
   pull_request:
   workflow_dispatch:
 
-# Sanity check that the site builds. Deployment happens host-side (see deploy/),
-# so this needs no secrets and does not publish anything.
+permissions:
+  contents: read
 jobs:
   build:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+        with:
+          persist-credentials: false
       - uses: peaceiris/actions-hugo@2752ce1d29631191ea3f27c23495fa06139a5b78 # v3
         with:
           hugo-version: "0.162.1"
           extended: true
-      - run: hugo --minify
+      - name: Build the static site
+        run: hugo --minify
+      - uses: docker/setup-buildx-action@37fe631027851001ddb9b187196cc803df7f5f0e # v4
+      - name: Build the serving image
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7
+        with:
+          context: .
+          load: true
+          tags: igou-io:test
+      - name: Verify the image serves the site as an unprivileged user
+        run: |
+          docker run --detach --name igou-io-smoke --read-only --tmpfs /tmp \
+            --user 1000:1000 --publish 127.0.0.1:18080:8080 igou-io:test
+          curl --fail --silent --retry 10 --retry-connrefused --retry-delay 1 \
+            http://127.0.0.1:18080/ > /dev/null
+      - name: Remove the smoke-test container
+        if: always()
+        run: docker rm --force igou-io-smoke
+      - name: Authenticate image publication
+        if: github.ref == 'refs/heads/master' && github.event_name != 'pull_request'
+        uses: docker/login-action@dbcb813823bdd20940b903addbd779551569679f # v4
+        with:
+          registry: quay.io
+          username: ${{ secrets.QUAY_LOGIN }}
+          password: ${{ secrets.QUAY_PASSWORD }}
+      - name: Publish the successful master build
+        if: github.ref == 'refs/heads/master' && github.event_name != 'pull_request'
+        uses: docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a # v7
+        with:
+          context: .
+          push: true
+          tags: |
+            quay.io/igou/igou.io:vps
+            quay.io/igou/igou.io:vps-${{ github.sha }}
+          labels: |
+            org.opencontainers.image.source=https://github.com/david-igou/igou.io
+            org.opencontainers.image.revision=${{ github.sha }}
