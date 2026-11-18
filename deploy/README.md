@@ -1,8 +1,9 @@
 # Deploy
 
 The site is built with the Hugo version pinned in `.github/workflows/master.yml`
-and packaged in an unprivileged nginx image. CI checks pull requests and publishes
-successful merged `master` builds to the existing public repository
+and packaged on the Project Hummingbird nginx image
+(`quay.io/hummingbird/nginx`), a minimal, non-root Red Hat image. CI checks
+pull requests and publishes successful merged `master` builds to the existing public repository
 `quay.io/igou/igou.io`, using `vps` and `vps-<commit>` tags.
 
 Production deployment is an immutable digest in
